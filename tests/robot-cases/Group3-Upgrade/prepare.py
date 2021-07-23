@@ -124,7 +124,7 @@ class HarborAPI:
             raise Exception(r"Error: Feature {} has no branch {}.".format(sys._getframe().f_code.co_name, branch))
 
     def create_user(self, username):
-        payload = {"username":username, "email":username+"@vmware.com", "password":"Harbor12345", "realname":username, "comment":"string"}
+        payload = {"username":username, "email":username+"@harbortest.com", "password":"Harbor12345", "realname":username, "comment":"string"}
         body=dict(body=payload)
         request(url+"users", 'post', **body)
 
@@ -316,7 +316,10 @@ class HarborAPI:
         body=dict(body=payload)
         request(url+"system/scanAll/schedule", 'post', **body)
 
-    def update_systemsetting(self, emailfrom, emailhost, emailport, emailuser, creation, selfreg, token, robot_token):
+    @get_feature_branch
+    def update_systemsetting(self, emailfrom, emailhost, emailport, emailuser, creation, selfreg, token, robot_token, **kwargs):
+        if kwargs["branch"] == 1:
+            robot_token = float(robot_token)*60*24
         payload = {
             "auth_mode": "db_auth",
             "email_from": emailfrom,
@@ -575,7 +578,7 @@ class HarborAPI:
             except Exception as e:
                 print(str(e))
                 pass
-        open(target, 'wb').write(ca_content.encode('utf-8'))
+        open(target, 'wb').write(str(ca_content).encode('utf-8'))
 
     @get_feature_branch
     def push_artifact_index(self, project, name, tag, **kwargs):
@@ -593,7 +596,7 @@ def request(url, method, user = None, userp = None, **kwargs):
     if userp is None:
         userp = "Harbor12345"
     kwargs.setdefault('headers', kwargs.get('headers', {}))
-    kwargs['headers']['Accept'] = 'application/json'
+    #kwargs['headers']['Accept'] = 'application/json'
     if 'body' in kwargs:
         kwargs['headers']['Content-Type'] = 'application/json'
         kwargs['data'] = json.dumps(kwargs['body'])
@@ -663,12 +666,12 @@ def do_data_creation():
 
     harborAPI.update_systemsetting(data["configuration"]["emailsetting"]["emailfrom"],
                                    data["configuration"]["emailsetting"]["emailserver"],
-                                   float(data["configuration"]["emailsetting"]["emailport"]),
+                                   int(data["configuration"]["emailsetting"]["emailport"]),
                                    data["configuration"]["emailsetting"]["emailuser"],
                                    data["configuration"]["projectcreation"],
                                    data["configuration"]["selfreg"],
-                                   float(data["configuration"]["token"]),
-                                   float(data["configuration"]["robot_token"])*60*24)
+                                   int(data["configuration"]["token"]),
+                                   int(data["configuration"]["robot_token"]), version=args.version)
 
     harborAPI.add_sys_allowlist(data["configuration"]["deployment_security"], version=args.version)
 
